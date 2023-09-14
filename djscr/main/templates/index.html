@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Scraping</title>
+</head>
+<body>
+    <h1>Web Scraping</h1>
+
+    <!-- Форма для ввода URL -->
+    <form id="scrape-form">
+        <label for="url-input">URL:</label>
+        <input type="text" id="url-input" required>
+        <button type="submit">Скрейп</button>
+    </form>
+
+    <!-- Отображение результатов -->
+    <div id="result"></div>
+
+    <!-- JavaScript-код для отправки запроса и обработки результатов -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const scrapeForm = document.getElementById("scrape-form");
+            const urlInput = document.getElementById("url-input");
+            const resultDiv = document.getElementById("result");
+
+            scrapeForm.addEventListener("submit", function (e) {
+                e.preventDefault();
+                const url = urlInput.value;
+                resultDiv.innerHTML = "Идет скрейпинг...";
+
+                fetch(`/scrape/?url=${encodeURIComponent(url)}`)
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.error) {
+                            resultDiv.innerHTML = `Произошла ошибка: ${data.error}`;
+                        } else {
+                            resultDiv.innerHTML = `
+                                <p>ВУЗ: ${data.vuz}</p>
+                                <p>Автор: ${data.author}</p>
+                                <p>Число публикаций в РИНЦ: ${data.publication_count}</p>
+                                <p>Индекс Хирша: ${data.hirsh}</p>
+                            `;
+                        }
+                    })
+                    .catch((error) => {
+                        resultDiv.innerHTML = `Произошла ошибка: ${error.message}`;
+                    });
+            });
+        });
+    </script>
+</body>
+</html>

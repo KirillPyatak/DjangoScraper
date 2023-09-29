@@ -1,99 +1,89 @@
-# Импорты
 from django.shortcuts import render
 from django.http import JsonResponse
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+import time
 from fake_useragent import UserAgent
 
 
-# Определение функции для скрейпинга
-def scrape(url):
-    # Настройка Selenium
-    chrome_options = Options()
-    chrome_options.add_argument('--headless')
-    user_agent = UserAgent().random
-    chrome_options.add_argument(f'user-agent={user_agent}')
-    driver = webdriver.Chrome(options=chrome_options)
-
-    # Загрузка страницы и создание объекта BeautifulSoup
-    driver.get(url)
-    soup = BeautifulSoup(driver.page_source, 'html.parser')
-
-    # Закрытие браузера
-    driver.quit()
-
-    return soup
+def index(request):
+    return render(request, 'index.html')
 
 
-# Определение функции для поиска числа публикаций в РИНЦ
-def find_publication_count(soup):
-    publications_element = soup.find('td', class_='midtext', string='Число публикаций в РИНЦ')
-    if publications_element:
-        publication_count = publications_element.find_next('a').text
-        return publication_count
-    else:
-        return None
-
-
-# Определение функции для поиска индекса Хирша
-def find_Hirsh(soup):
-    publications_element = soup.find('td', class_='midtext',
-                                     string='Индекс Хирша по всем публикациям на elibrary.ru')
-    if publications_element:
-        publication_hirsh = publications_element.find_next('a').text
-        return publication_hirsh
-    else:
-        return None
-
-
-# Определение функции для поиска названия вуза
-def find_vuz_name(soup):
-    items = soup.find_all('div')
-    div_num = 0
-    for n, i in enumerate(items, start=0):
-        tags = i.find_all('span', class_='aster')
-        for j in tags:
-            if j.text == '*':
-                div_num = n
-    vuz_element = items[div_num].find('a')
-    if vuz_element:
-        return vuz_element.text
-    else:
-        return None
-
-
-# Определение функции для поиска имени автора
-def find_author_name(soup):
-    items = soup.find_all('div')
-    div_num = 0
-    for n, i in enumerate(items, start=0):
-        tags = i.find_all('span', class_='aster')
-        for j in tags:
-            if j.text == '*':
-                div_num = n
-    return items[div_num].find('b').text
-
-
-# Определение функции для поиска числа статей в российских журналах из перечня ВАК
-def find_VAC(soup):
-    vac_element = soup.find('td', class_='midtext',
-                            string='Число статей в российских журналах из перечня ВАК')
-    if vac_element:
-        a_element = vac_element.find_next('a')
-        if a_element:
-            publication_vac = a_element.text
-            return publication_vac
-    return None
-
-
-# Определение обработчика запроса Django
 def scrape_view(request):
     if request.method == 'GET':
         url = request.GET.get('url')
 
         try:
+            # Функция для скрейпинга страницы
+            def scrape(url):
+                service = Service(
+                    executable_path='C:/Users/user/Downloads/chromedriver_win32/chromedriver.exe')
+                options = Options()
+                options.add_argument('--headless')
+                user_agent = UserAgent().random
+                options.add_argument(f'user-agent={user_agent}')
+                driver = webdriver.Chrome(service=service, options=options)
+                driver.get(url)
+                time.sleep(3)
+                soup = BeautifulSoup(driver.page_source, 'html.parser')
+                driver.quit()
+                return soup
+
+            # Функции для поиска данных на странице
+            def find_publication_count(soup):
+                publications_element = soup.find('td', class_='midtext', string='Число публикаций в РИНЦ')
+                if publications_element:
+                    publication_count = publications_element.find_next('a').text
+                    return publication_count
+                else:
+                    return None
+
+            def find_Hirsh(soup):
+                publications_element = soup.find('td', class_='midtext',
+                                                 string='Индекс Хирша по всем публикациям на elibrary.ru')
+                if publications_element:
+                    publication_hirsh = publications_element.find_next('a').text
+                    return publication_hirsh
+                else:
+                    return None
+
+            def find_vuz_name(soup):
+                items = soup.find_all('div')
+                div_num = 0
+                for n, i in enumerate(items, start=0):
+                    tags = i.find_all('span', class_='aster')
+                    for j in tags:
+                        if j.text == '*':
+                            div_num = n
+                vuz_element = items[div_num].find('a')
+                if vuz_element:
+                    return vuz_element.text
+                else:
+                    return None
+
+            def find_author_name(soup):
+                items = soup.find_all('div')
+                div_num = 0
+                for n, i in enumerate(items, start=0):
+                    tags = i.find_all('span', class_='aster')
+                    for j in tags:
+                        if j.text == '*':
+                            div_num = n
+                return items[div_num].find('b').text
+
+            def find_VAC(soup):
+                vac_element = soup.find('td', class_='midtext',
+                                        string='Число статей в российских журналах из перечня ВАК')
+                if vac_element:
+                    a_element = vac_element.find_next('a')
+                    if a_element:
+                        publication_vac = a_element.text
+                        return publication_vac
+                return None
+
             # Выполнить скрейпинг и поиск данных
             soup = scrape(url)
             data = {

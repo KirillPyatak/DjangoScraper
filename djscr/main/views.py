@@ -14,6 +14,7 @@ from selenium.webdriver.chrome.options import Options
 import time
 from fake_useragent import UserAgent
 
+#Скрапер
 class ScrapedDataAPIView(APIView):
     def get(self, request):
         scraped_data = ScrapedData.objects.all()
